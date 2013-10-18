@@ -6,7 +6,6 @@ public class EJERCICIO3AREA_ESFERA {
 
 	public static void main(String[] args) {
 		float radio;
-		float perimetro;
 		float area;
 		float pi;
 		pi=(float)Math.PI;
