@@ -1,6 +1,8 @@
+package graphics2;
 
-package graphics;
-
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 import java.awt.Dimension;
 import java.awt.Graphics;
@@ -24,8 +26,9 @@ public class Canvas
     private BufferedImage background;
     private JFrame frame;
     private CanvasComponent component;
+    private MyMouseListener mouseListener;
 
-    private static final int MIN_SIZE = 100;
+    private static final int MIN_SIZE = 600;
     private static final int MARGIN = 10;
     private static final int LOCATION_OFFSET = 120;
 
@@ -65,10 +68,95 @@ public class Canvas
             return new Dimension(maxx + MARGIN, maxy + MARGIN);
         }
     }
+    
+    class MyMouseListener implements MouseListener,MouseMotionListener{
+    	
+    	private Point mouseLocation = new java.awt.Point();
+    	private Object mouseState = new Object();;
+
+    	
+    	// MouseListener
+
+    	  private void getMouseLocation(MouseEvent e) {
+    	    mouseLocation.x = e.getX();
+    	    mouseLocation.y = e.getY();
+    	  }
+    	  
+    	  public void mouseClicked(MouseEvent e) {
+    	  }
+
+    	  public void mousePressed(MouseEvent e) {
+    		    synchronized(mouseLocation) {
+    		      getMouseLocation(e);
+    		    }
+    		  }
+
+    		  public void mouseReleased(MouseEvent e) {
+    		    synchronized(mouseLocation) {
+    		      getMouseLocation(e);
+    		      mouseLocation.notify();
+    		    }
+    		    synchronized(mouseState) {
+    		      mouseState.notify();
+    		    }
+    		  }
+
+    		  public void mouseEntered(MouseEvent e) {
+    		    synchronized(mouseLocation) {
+    		      getMouseLocation(e);
+    		    }
+    		  }
+
+    		  public void mouseExited(MouseEvent e) {
+    		  }
+    		  
+    		  /**
+    		   * Returns the current mouse location (relative to the corresponding 
+    		   * drawing panel) as a <code>java.awt.Point</code>.
+    		   *
+    		   * @return      the <code>java.awt.Point</code> object
+    		   */
+    		  public java.awt.Point getMouse() {
+    			    synchronized(mouseLocation) {
+    			      return mouseLocation;
+    			    }
+    			  }
+    		 
+    		  /**
+    		   * Waits until the mouse button is pressed or released, then returns the 
+    		   * location of the mouse.
+    		   * 
+    		   * @return      <code>java.awt.Point</code> object;
+    		   */
+    		  public java.awt.Point waitClick() {
+    		    synchronized(mouseState) {
+    		      try {
+    		        mouseState.wait();
+    		      }
+    		      catch( InterruptedException it ) {}
+    		    }
+    		    return mouseLocation;
+    		  }
+
+			@Override
+			public void mouseDragged(MouseEvent e) {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void mouseMoved(MouseEvent e) {
+				synchronized(mouseLocation) {
+	    		      getMouseLocation(e);
+	    		    }
+			}
+    		  
+    }
 
     private Canvas()
     {
         component = new CanvasComponent();
+        mouseListener = new MyMouseListener();
 
         if (System.getProperty("com.horstmann.codecheck") == null)
         {
@@ -79,6 +167,8 @@ public class Canvas
             frame.pack();
             frame.setLocation(LOCATION_OFFSET, LOCATION_OFFSET);
             frame.setVisible(true);
+            component.addMouseListener(mouseListener);
+            component.addMouseMotionListener(mouseListener);
         }
         else
         {
@@ -119,6 +209,12 @@ public class Canvas
         {
             shapes.add(s);
         }
+        repaint();
+    }
+    
+    public void hide(Shape s)
+    {
+        shapes.remove(s);
         repaint();
     }
 
@@ -191,9 +287,13 @@ public class Canvas
         }
     	g.dispose();    	
     }
-
-	public Point waitMouseClick() {
-		// TODO Auto-generated method stub
-		
-	}
+    
+    public Point getMousePosition() {
+    	
+    	return this.mouseListener.getMouse();
+    }
+    
+    public Point waitMouseClick() {
+    	return this.mouseListener.waitClick();
+    }
 }
